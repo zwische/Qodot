@@ -128,6 +128,8 @@ func build_def_text() -> String:
 			prop_val = "[" + "\n"
 			for choice in value:
 				var choice_val = value[choice]
+				if choice_val is String:
+					choice_val = "\"" + choice_val + "\""
 				prop_val += "\t\t" + str(choice_val) + " : \"" + choice + "\"\n"
 			prop_val += "\t]"
 		elif value is Array:

@@ -1173,7 +1173,7 @@ func apply_properties() -> void:
 								
 							properties[property] = prop_color
 						elif prop_default is Dictionary:
-							properties[property] = prop_string.to_int()
+							properties[property] = prop_string
 						elif prop_default is Array:
 							properties[property] = prop_string.to_int()
 				
@@ -1192,10 +1192,10 @@ func apply_properties() -> void:
 						# Choices
 						elif prop_default is Dictionary:
 							var prop_desc = entity_definition.class_property_descriptions[property]
-							if prop_desc is Array and prop_desc.size() > 1 and prop_desc[1] is int:
+							if prop_desc is Array and prop_desc.size() > 1:
 								properties[property] = prop_desc[1]
 							else:
-								properties[property] = 0
+								properties[property] = ""
 						# Everything else
 						else:
 							properties[property] = prop_default
