@@ -34,7 +34,7 @@ extends Resource
 
 ## FGD resource to include with this game. If using multiple FGD resources, this should be the master FGD that contains them in the `base_fgd_files` resource array. 
 ## Use only one FGD resource. Using multiple FGDs in this array does not work as intended but is left as an array for backwards compatibility.
-@export var fgd_files : Array[Resource] = [preload("res://addons/qodot/game_definitions/fgd/qodot_fgd.tres")]
+@export var fgd_files : Array[Resource]
 
 ## Scale expression that modifies the default display scale of entities in Trenchbroom. See the [**Trenchbroom Documentation**](https://trenchbroom.github.io/manual/latest/#game_configuration_files_entities) for more information.
 @export var entity_scale: String = "1"
@@ -57,7 +57,7 @@ var _fgd_filenames : Array = []
 ## Private default .cfg contents.
 ## See also: https://trenchbroom.github.io/manual/latest/#game_configuration_files
 var _base_text: String = """{
-	"version": 8,
+	"version": 9,
 	"name": "%s",
 	"icon": "icon.png",
 	"fileformats": [
@@ -67,7 +67,7 @@ var _base_text: String = """{
 		"searchpath": ".",
 		"packageformat": { "extension": ".zip", "format": "zip" }
 	},
-	"textures": {
+	"materials": {
 		"root": "textures",
 		"extensions": [".bmp", ".exr", ".hdr", ".jpeg", ".jpg", ".png", ".tga", ".webp"],
 		"excludes": [ %s ]
@@ -103,8 +103,8 @@ func _init():
 ## Matches tag key enum to the String name used in .cfg
 static func get_match_key(tag_match_type: int) -> String:
 	match tag_match_type:
-		TrenchBroomTag.TagMatchType.TEXTURE:
-			return "texture"
+		TrenchBroomTag.TagMatchType.MATERIAL:
+			return "material"
 		TrenchBroomTag.TagMatchType.CLASSNAME:
 			return "classname"
 		_:
@@ -163,7 +163,7 @@ func parse_tags(tags: Array) -> String:
 		tags_str += "\t\t\t\t\"pattern\": \"%s\"" % brush_tag.tag_pattern
 		if brush_tag.texture_name != "":
 			tags_str += ",\n"
-			tags_str += "\t\t\t\t\"texture\": \"%s\"" % brush_tag.texture_name
+			tags_str += "\t\t\t\t\"material\": \"%s\"" % brush_tag.texture_name
 		tags_str += "\n"
 		tags_str += "\t\t\t}"
 		if brush_tag != tags[-1]:

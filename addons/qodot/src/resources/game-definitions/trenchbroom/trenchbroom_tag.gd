@@ -6,7 +6,7 @@ class_name TrenchBroomTag
 extends Resource
 
 enum TagMatchType {
-	TEXTURE, ## Tag applies to any face with a texture matching the texture name.
+	MATERIAL, ## Tag applies to any face with a texture matching the texture name.
 	CONTENT_FLAG, ## Tag applies to any brush with a content flag matching the tag pattern.
 	SURFACE_FLAG, ## Tag applies to any face with a surface flag matching the tag pattern.
 	SURFACE_PARAM, ## Tag applies to any face with a special surface param. See Trenchbroom Manual for more info: https://trenchbroom.github.io/manual/latest/#special_brush_face_types

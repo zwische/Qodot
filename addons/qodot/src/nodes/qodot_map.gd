@@ -29,14 +29,14 @@ signal unwrap_uv2_complete()
 
 @export_category("Map")
 ## Trenchbroom Map file to build a scene from
-@export_global_file("*.map") var map_file := ""
+@export_file("*.map") var map_file := ""
 ## Ratio between Trenchbroom units in the .map file and Godot units.
 ## An inverse scale factor of 16 would cause 16 Trenchbroom units to correspond to 1 Godot unit. See [url=https://qodotplugin.github.io/docs/geometry.html#scale]Scale[/url] in the Qodot documentation.
 @export var inverse_scale_factor := 16.0
 @export_category("Entities")
 ## [QodotFGDFile] for the map.
 ## This resource will translate between Trenchbroom classnames and Godot scripts/scenes. See [url=https://qodotplugin.github.io/docs/entities/]Entities[/url] in the Qodot manual.
-@export var entity_fgd: QodotFGDFile = load("res://addons/qodot/game_definitions/fgd/qodot_fgd.tres")
+@export var entity_fgd: QodotFGDFile
 @export_category("Textures")
 ## Base directory for textures. When building materials, Qodot will search this directory for texture files matching the textures assigned to Trenchbroom faces.
 @export_dir var base_texture_dir := "res://textures"
@@ -118,6 +118,7 @@ func _ready() -> void:
 # Utility
 ## Verify that Qodot is functioning and that [member map_file] exists. If so, build the map. If not, signal [signal build_failed]
 func verify_and_build():
+	print('verify_parameters')
 	if verify_parameters():
 		build_map()
 	else:
@@ -215,13 +216,17 @@ func add_child_editor(parent, node, below = null) -> void:
 
 ## Set the owner of [code]node[/code] to the current scene.
 func set_owner_editor(node):
-	var tree := get_tree()
 	
-	if not tree:
-		return
+	var tree : SceneTree
+	if is_inside_tree():
+		tree = get_tree()
 	
-	var edited_scene_root := tree.get_edited_scene_root()
-	
+	var edited_scene_root : Node
+	if tree:
+		edited_scene_root = tree.get_edited_scene_root()
+	else:
+		edited_scene_root = self
+		
 	if not edited_scene_root:
 		return
 	
@@ -245,11 +250,14 @@ func run_build_steps(post_attach := false) -> void:
 	
 	while target_array.size() > 0:
 		var build_step = target_array.pop_front()
+		print(build_step)
 		emit_signal("build_progress", build_step[0], float(build_step_index + 1) / float(build_step_count))
 		
-		var scene_tree := get_tree()
+		var scene_tree : SceneTree
+		if (is_inside_tree()):
+			scene_tree = get_tree()
 		if scene_tree and not block_until_complete:
-			await get_tree().create_timer(YIELD_DURATION).timeout
+			await scene_tree.create_timer(YIELD_DURATION).timeout
 		
 		var result = run_build_step(build_step[0], build_step[1])
 		var target = build_step[2]
@@ -259,7 +267,7 @@ func run_build_steps(post_attach := false) -> void:
 		build_step_index += 1
 		
 		if scene_tree and not block_until_complete:
-			await get_tree().create_timer(YIELD_DURATION).timeout
+			await scene_tree.create_timer(YIELD_DURATION).timeout
 
 	if post_attach:
 		_build_complete()
@@ -307,14 +315,19 @@ func register_post_attach_steps() -> void:
 # Actions
 ## Build the map
 func build_map() -> void:
+	print('reset_build_context')
 	reset_build_context()
 	
 	print('Building %s\n' % map_file)
 	start_profile('build_map')
 	
+	print('register_build_steps')
 	register_build_steps()
-	register_post_attach_steps()
 	
+	print('register_post_attach_steps')
+	register_post_attach_steps()
+
+	print('run_build_steps')	
 	run_build_steps()
 
 ## Recursively unwrap UV2s for [code]node[/code] and its children, in preparation for baked lighting.
@@ -927,6 +940,8 @@ func build_worldspawn_layer_mesh_dict() -> Dictionary:
 		var texture = layer.texture
 		qodot.gather_worldspawn_layer_surfaces(texture, brush_clip_texture, face_skip_texture)
 		var texture_surfaces := qodot.fetch_surfaces(inverse_scale_factor) as Array
+		if (!texture_surfaces[0]):
+			continue
 		
 		var mesh: Mesh = null
 		if not texture in meshes:
@@ -936,7 +951,7 @@ func build_worldspawn_layer_mesh_dict() -> Dictionary:
 		mesh.add_surface_from_arrays(ArrayMesh.PRIMITIVE_TRIANGLES, texture_surfaces[0])
 		mesh.surface_set_name(mesh.get_surface_count() - 1, texture)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, material_dict[texture])
-	
+			
 	return meshes
 
 ## Build [MeshInstance3D]s from brush entities and add them to the add child queue
@@ -1052,6 +1067,9 @@ func apply_entity_occluders() -> void:
 		var verts: PackedVector3Array
 		var indices: PackedInt32Array
 		for surf_idx in range(mesh.get_surface_count()):
+			var mat = mesh.surface_get_material(surf_idx)
+			if (mat is ShaderMaterial && (mat.shader.resource_path.contains("_scissor") || mat.shader.resource_path.contains("_alpha"))) || (mat is BaseMaterial3D && mat.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED):
+				continue
 			var vert_count := verts.size()
 			var surf_array := mesh.surface_get_arrays(surf_idx)
 			verts.append_array(surf_array[Mesh.ARRAY_VERTEX])
@@ -1092,9 +1110,11 @@ func add_children() -> void:
 				add_children_complete()
 				return
 		
-		var scene_tree := get_tree()
+		var scene_tree : SceneTree
+		if is_inside_tree():
+			scene_tree = get_tree()
 		if scene_tree and not block_until_complete:
-			await get_tree().create_timer(YIELD_DURATION).timeout
+			await scene_tree.create_timer(YIELD_DURATION).timeout
 
 ## Set owners and start post-attach build steps
 func add_children_complete():
@@ -1117,9 +1137,11 @@ func set_owners():
 				set_owners_complete()
 				return
 				
-		var scene_tree := get_tree()
+		var scene_tree : SceneTree
+		if is_inside_tree():
+			scene_tree = get_tree()
 		if scene_tree and not block_until_complete:
-			await get_tree().create_timer(YIELD_DURATION).timeout
+			await scene_tree.create_timer(YIELD_DURATION).timeout
 
 ## Finish profiling for set_owners and start post-attach build steps
 func set_owners_complete():
