@@ -86,6 +86,7 @@ func get_entity_dicts() -> Array:
 			if !is_wsl_brush:
 				brush_indices.append(b)
 		
+		dict["entity"] = entity
 		dict["brush_indices"] = brush_indices
 		dict["center"] = Vector3(entity.center.y, entity.center.z, entity.center.x)
 		dict["properties"] = entity.properties

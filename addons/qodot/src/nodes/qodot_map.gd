@@ -78,7 +78,7 @@ signal unwrap_uv2_complete()
 @export var set_owner_batch_size := 1000
 
 # Build context variables
-var qodot = null
+var qodot : Qodot = null
 
 var profile_timestamps := {}
 
@@ -693,9 +693,24 @@ func build_entity_collision_shape_nodes() -> Array:
 			entity_collision_shapes.append(collision_shape)
 			queue_add_child(node, collision_shape)
 		else:
+			var entity := entity_dict['entity'] as QodotMapData.Entity
 			for brush_idx in entity_dict['brush_indices']:
-				var collision_shape := CollisionShape3D.new()
-				collision_shape.name = "entity_%s_brush_%s_collision_shape" % [entity_idx, brush_idx]
+				var brush := entity.brushes[brush_idx]
+				var texture_names = []
+				for face in brush.faces:
+					var texture_name = texture_list[face.texture_idx]
+					if (!texture_names.has(texture_name)):
+						texture_names.append(texture_name)
+				var name = "__".join(texture_names)
+				print(name)
+				var surface_type = CollisionShapeWithSurface.DetermineSurfaceType(name)
+				var collision_shape
+				if (surface_type > 0):
+					collision_shape = CollisionShapeWithSurface.new()
+					collision_shape.SurfaceType = surface_type
+				else:
+					collision_shape = CollisionShape3D.new()
+				collision_shape.name = "e%s_b%s_colshape__%s" % [entity_idx, brush_idx, name]
 				entity_collision_shapes.append(collision_shape)
 				queue_add_child(node, collision_shape)
 		entity_collision_shapes_arr.append(entity_collision_shapes)
